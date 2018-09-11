@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="backup">Backup</string>
+    <string name="restore">Restore</string>
+    <string name="select_app">Select an app</string>
+    <string name="backup_dir">Backup folder</string>
+    <string name="ended">Backup ended</string>
+
+</resources>
