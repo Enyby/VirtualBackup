@@ -2,13 +2,18 @@ package com.virtualbackup;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
+import com.virtualbackup32.R;
+
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -41,6 +46,14 @@ public class MainActivity extends Activity implements OnClickListener {
 		
 		Button restore = findViewById(R.id.restore);
 		restore.setOnClickListener(this);
+		
+		if (Build.VERSION.SDK_INT >= 23) {
+			requestPermissions(new String[]{
+				Manifest.permission.READ_EXTERNAL_STORAGE,
+				Manifest.permission.WRITE_EXTERNAL_STORAGE,
+				"android.permission.WRITE_MEDIA_STORAGE",
+			}, 0);
+		}
 	}
 
 	@Override
@@ -97,14 +110,30 @@ public class MainActivity extends Activity implements OnClickListener {
 					
 					status.setText(cmd[from] + "\n\n-->\n\n" + cmd[to]);
 					
+					Log.e("VirtualBackup", "cmd: " + Arrays.toString(cmd));
+					
 					new Thread(new Runnable() {
 						@Override
 						public void run() {
-							String descr;
+							String descr = "";
 							try {
-								new File(cmd[to]).mkdirs();
+								File tdir = new File(cmd[to]);
+								descr += "mkdirs '" + cmd[to] + "': " + tdir.mkdirs() + "\n";
+								descr += "exists: " + tdir.exists() + "\n";
+								descr += "isDir: " + tdir.isDirectory() + "\n";
+								byte[] err = new byte[4096];
+								if (!tdir.isDirectory()) {
+									Process proc = Runtime.getRuntime().exec(new String[] {"mkdir", "-p", cmd[to]});
+									int read = proc.getErrorStream().read(err);
+									if (read > 0) descr += "mkdir err: " + new String(err, 0, read) + "\n";
+									descr += "mkdir end: " + proc.waitFor();
+									descr += "exists: " + tdir.exists() + "\n";
+									descr += "isDir: " + tdir.isDirectory() + "\n";
+								}
 								Process proc = Runtime.getRuntime().exec(cmd);
-								descr = "end: " + proc.waitFor();
+								int read = proc.getErrorStream().read(err);
+								if (read > 0) descr += "cp err: " + new String(err, 0, read) + "\n";
+								descr += "cp end: " + proc.waitFor();
 							} catch (Exception e) {
 								Log.w(TAG, "Failed copy", e);
 								descr = e.toString();
